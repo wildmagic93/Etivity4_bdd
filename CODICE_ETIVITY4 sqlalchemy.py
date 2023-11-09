@@ -2,7 +2,9 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String
 from sqlalchemy import create_engine
-engine = create_engine('mysql://user:pass/scuole', echo
+from sqlalchemy.orm import relationship
+from sqlalchemy import ForeignKey
+engine = create_engine('mysql://paolo:paulusx93@localhost/scuole', echo
 = True)
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
@@ -15,7 +17,7 @@ session = Session()
 
 class Dirigenti_scolastici(Base):
 	__tablename__ = 'Dirigenti_scolastici'
-	CF = Column(Integer, primary_key = True)
+	CF = Column(String, primary_key = True)
 	nome = Column(String)
 	cognome = Column(String)
 	dirigente = relationship("Elenco_scuole", back_populates="scuola", cascade = "all, delete-orphan")
@@ -45,14 +47,14 @@ class Docenti(Base):
 class Lista_materie(Base):
 	__tablename__ = 'Lista_materie'
 	classe = Column(String, primary_key = True)
-	nome_insegnamento = Column(String, primary_key = True, ForeignKey('Docenti.insegnamento'))
+	nome_insegnamento = Column(String, ForeignKey('Docenti.insegnamento'), primary_key = True, )
 	
 	elenco_docenti = relationship("Docenti", back_populates="materie")
 	classi = relationship("Elenco_classi", back_populates="elenco_materie")
 
 class Elenco_classi(Base):
 	__tablename__ = 'Elenco_classi'
-	classe = Column(String, primary_key = True, ForeignKey('Lista_materie.classe'))
+	classe = Column(String, ForeignKey('Lista_materie.classe'), primary_key = True)
 	nome_scuola = Column(String, primary_key = True)
 	ATA_classi = relationship("Personale_ATA", back_populates="elenco_classi")
 	elenco_materie = relationship("Lista_materie", back_populates="classi")
@@ -60,18 +62,18 @@ class Elenco_classi(Base):
 
 class Attivita_extrascolastiche(Base):
 	__tablename__ = 'Attivita_extrascolastiche'
-	CF_docente = Column(String, primary_key = True, ForeignKey('Docenti.CF'))
+	CF_docente = Column(String, ForeignKey('Docenti.CF'), primary_key = True)
 	nome_corso = Column(String, primary_key = True)
 	classe = Column(String, ForeignKey('Elenco_classi.classe'), ForeignKey('Studenti.classe'))
-	elenco_materie = relationship("Lista_materie", back_populates="classi")
+	#elenco_materie = relationship("Lista_materie", back_populates="classi")
 	elenco_studenti = relationship("Studenti", back_populates="attivita_studente")
 	elenco_docenti = relationship("Docenti", back_populates="attivita_docente")
 
 class Studenti(Base):
 	__tablename__ = 'Studenti'
 	CF = Column(String, primary_key = True)
-	classe = Column(String, primary_key = True, ForeignKey('Elenco_classi.classe'))
-	nome_scuola = Column(String, ForeignKey('Elenco_scuole.nome_scuola'), ForeignKey('Elenco_classi.nome_scuola'))
+	classe = Column(String, ForeignKey('Elenco_classi.classe'), primary_key = True)
+	nome_scuola = Column(String, ForeignKey('Elenco_scuole.nome_scuola'))
 	nome = Column(String)
 	cognome = Column(String)
 	classi_studente = relationship("Elenco_classi", back_populates="elenco_studenti")
@@ -82,25 +84,30 @@ class Personale_ATA(Base):
 	__tablename__ = 'Personale_ATA'
 	CF = Column(String, primary_key = True)
 	classe = Column(String, ForeignKey('Elenco_classi.classe'))
-	nome_scuola = Column(String, ForeignKey('Elenco_scuole.nome_scuola'), ForeignKey('Elenco_classi.nome_scuola'))
+	nome_scuola = Column(String, ForeignKey('Elenco_scuole.nome_scuola'))
 	nome = Column(String)
 	cognome = Column(String)
 	elenco_classi = relationship("Elenco_classi", back_populates="ATA_classi")
 	scuola_appartenenza = relationship("Elenco_scuole", back_populates="ATA_appartenenza")
 	
 
-session.add(c1)
+#session.add(c1)
 session.commit()
 # per più elementi…
 
-
-a1 = Dirigenti_scolastici(CF = 'AAA1', nome = 'Ugo', cognome = 'Sari', Elenco_scuole(nome_scuola = 'Istituto De Amicis', indirizzo = 'Viale Vittorio Veneto'))
-a2 = Dirigenti_scolastici(CF = 'BBB1', nome = 'Guido', cognome = 'Celli', Elenco_scuole(nome_scuola = 'Istituto Ugo Foscolo', indirizzo = 'Corso Emanuele'))
-a3 = Dirigenti_scolastici(CF = 'CCC1', nome = 'Nadia', cognome = 'Bianchi', Elenco_scuole(nome_scuola = 'Istituto Leonardo Da Vinci', indirizzo = 'Corso Gelone'))
+"""
+a1 = Dirigenti_scolastici(CF = 'AAA1', nome = 'Ugo', cognome = 'Sari')
+a1.dirigente = [Elenco_scuole(nome_scuola = 'Istituto De Amicis', indirizzo = 'Viale Vittorio Veneto')]
+a2 = Dirigenti_scolastici(CF = 'BBB1', nome = 'Guido', cognome = 'Celli')
+a2.dirigente = [Elenco_scuole(nome_scuola = 'Istituto Ugo Foscolo', indirizzo = 'Corso Emanuele')]
+a3 = Dirigenti_scolastici(CF = 'CCC1', nome = 'Nadia', cognome = 'Bianchi')
+a3.dirigente = [Elenco_scuole(nome_scuola = 'Istituto Leonardo Da Vinci', indirizzo = 'Corso Gelone')]
 
 d1 = Docenti(CF = 'DDD1', insegnamento = 'Scienze', nome = 'Mario', cognome = 'Rossi', nome_scuola = 'Istituto De Amicis')
 d2 = Docenti(CF = 'EEE1', insegnamento = 'Arte', nome = 'Bruno', cognome = 'Riggi', nome_scuola = 'Istituto Ugo Foscolo')
-
+#e1 = Elenco_scuole(nome_scuola = 'Istituto De Amicis', indirizzo = 'Viale Vittorio Veneto')
+#e2 = Elenco_scuole(nome_scuola = 'Istituto Ugo Foscolo', indirizzo = 'Corso Emanuele')
+#e3 = Elenco_scuole(nome_scuola = 'Istituto Leonardo Da Vinci', indirizzo = 'Corso Gelone')
 c1 = Elenco_classi(classe = 'IIIA', nome_scuola = 'Istituto De Amicis')
 c2 = Elenco_classi(classe = 'IIC', nome_scuola = 'Istituto De Amicis')
 
@@ -115,9 +122,9 @@ s4 = Studenti(CF = 'DD11', nome = 'Ambra', cognome = 'Ragaglia', nome_scuola = '
 p1 = Personale_ATA(CF = 'AAA2', nome = 'Danilo', cognome = 'Vanni', nome_scuola = 'Istituto De Amicis', classe = 'IA')
 p2 = Personale_ATA(CF = 'BBB2', nome = 'Piero', cognome = 'Salerno', nome_scuola = 'Istituto De Amicis', classe = 'NO')
 
-session.add_all([a1, a2, a3. d1, d2, c1, c2, m1, m2, s1, s2, s3, s4, p1, p2])
+session.add_all([a1, a2, a3, d1, d2, c1, c2, m1, m2, s1, s2, s3, s4, p1, p2])
 session.commit()
-
+"""
 dirigenti_scuole = session.query(Dirigenti_scolastici).join(Elenco_scuole).all()
 for el in dirigenti_scuole:
 	print(el)
@@ -136,11 +143,12 @@ for el in ATA_classi:
 
 
 xx = session.query(Dirigenti_scolastici).get(3)
-session.delete(xx)
-a3 = Dirigenti_scolastici(CF = 'KKK1', nome = 'Andrea', cognome = 'Bianchi', Elenco_scuole(nome_scuola = 'Istituto Leonardo Da Vinci', indirizzo = 'Corso Francia'))
-session.add(a3)
+#session.delete(xx)
+a3 = Dirigenti_scolastici(CF = 'KKK1', nome = 'Andrea', cognome = 'Bianchi')
+a3.dirigente = [Elenco_scuole(nome_scuola = 'Istituto Leonardo Da Vinci', indirizzo = 'Corso Francia')]
+#session.add(a3)
 session.commit()
 dirigenti_scuole = session.query(Dirigenti_scolastici).join(Elenco_scuole).all()
 for el in dirigenti_scuole:
-	print(el)
+        print(el)
 # Inserimento dei dati in tabella Dirigenti
